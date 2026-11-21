@@ -22,6 +22,12 @@ class StudentTest {
     }
 
     @Test
+    void fileNameIsUsedWhenTheNameWouldBeEmpty() {
+        assertEquals("_.png", Student.nameFromFileName("_.png"));
+        assertEquals("__.jpg", Student.nameFromFileName("__.jpg"));
+    }
+
+    @Test
     void hyphensAndCaseAreKept() {
         assertEquals("Ana-Sofía", Student.nameFromFileName("Ana-Sofía.gif"));
     }
