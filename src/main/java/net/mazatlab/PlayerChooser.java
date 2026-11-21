@@ -105,9 +105,10 @@ public class PlayerChooser {
     }
 
     public void raffle() {
-        if (this.files.isEmpty()) {
+        if (this.files.isEmpty() || (this.timer != null && this.timer.isRunning())) {
             return;
         }
+        this.btnSortear.setEnabled(false);
         this.timer = new Timer(100, new ActionListener() {
 
             int low = 0;
@@ -117,7 +118,6 @@ public class PlayerChooser {
             @Override public void actionPerformed(ActionEvent e) {
                 int index = random.nextInt(high-low)+low;
                 PlayerChooser.this.lblPlayer.setIcon(new ImageIcon(files.get(index)));
-                PlayerChooser.this.btnSortear.setEnabled(false);
             }
         });
         this.timer.start();
