@@ -1,6 +1,7 @@
 package net.mazatlab;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
@@ -68,6 +69,38 @@ class ImageChooserTest {
     @Test
     void invalidFolderPathReturnsNoImages() {
         assertTrue(new ImageChooser("bad\u0000path").getImages().isEmpty());
+    }
+
+    @Test
+    void startupUsesTheCommandLineFolderFirst() throws IOException {
+        Files.createDirectories(this.tempDir.resolve("img"));
+        Path classFolder = Files.createDirectories(this.tempDir.resolve("class-3B"));
+
+        ImageChooser chooser = ImageChooser.forStartup(new String[] {classFolder.toString()}, this.tempDir);
+
+        assertFalse(chooser.isDemo());
+        assertEquals("class-3B", chooser.description());
+    }
+
+    @Test
+    void startupUsesTheImgFolderInTheWorkingDirectory() throws IOException {
+        Files.createDirectories(this.tempDir.resolve("img"));
+        Files.createFile(this.tempDir.resolve("img").resolve("ana.png"));
+
+        ImageChooser chooser = ImageChooser.forStartup(new String[0], this.tempDir);
+
+        assertFalse(chooser.isDemo());
+        assertEquals("img", chooser.description());
+        assertEquals("ana", chooser.getImages().get(0).name());
+    }
+
+    @Test
+    void startupFallsBackToTheDemoImages() {
+        ImageChooser chooser = ImageChooser.forStartup(new String[0], this.tempDir);
+
+        assertTrue(chooser.isDemo());
+        assertEquals("Demo images", chooser.description());
+        assertEquals(7, chooser.getImages().size());
     }
 
     @Test

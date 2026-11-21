@@ -5,14 +5,20 @@ import java.awt.EventQueue;
 import java.awt.Font;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.nio.file.Paths;
 import java.util.List;
 import java.util.Random;
 
 import javax.swing.BorderFactory;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
+import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
+import javax.swing.JMenu;
+import javax.swing.JMenuBar;
+import javax.swing.JMenuItem;
+import javax.swing.JOptionPane;
 import javax.swing.SwingConstants;
 import javax.swing.Timer;
 
@@ -22,6 +28,7 @@ import javax.swing.Timer;
  */
 public class PlayerChooser {
 
+    private static final String TITLE = "Player Chooser";
     private static final int CYCLE_MILLIS = 100;
     private static final String START_TEXT = "Pick a student";
     private static final String STOP_TEXT = "Stop";
@@ -41,7 +48,8 @@ public class PlayerChooser {
         EventQueue.invokeLater(new Runnable() {
             public void run() {
                 try {
-                    PlayerChooser window = new PlayerChooser();
+                    ImageChooser images = ImageChooser.forStartup(args, Paths.get(""));
+                    PlayerChooser window = new PlayerChooser(images);
                     window.frame.setVisible(true);
                 } catch (Exception e) {
                     e.printStackTrace();
@@ -59,17 +67,28 @@ public class PlayerChooser {
 
     PlayerChooser(ImageChooser imageChooser) {
         this.initialize();
-        this.startSession(imageChooser.getImages());
+        this.load(imageChooser);
     }
 
     /**
      * Initialize the contents of the frame.
      */
     private void initialize() {
-        this.frame = new JFrame("Player Chooser");
-        this.frame.setBounds(100, 100, 400, 360);
+        this.frame = new JFrame(TITLE);
+        this.frame.setBounds(100, 100, 400, 380);
         this.frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         this.frame.getContentPane().setLayout(null);
+
+        JMenu menuImages = new JMenu("Images");
+        JMenuItem itemDemo = new JMenuItem("Load demo images");
+        itemDemo.addActionListener(e -> this.loadDemoImages());
+        menuImages.add(itemDemo);
+        JMenuItem itemOwn = new JMenuItem("Load my images…");
+        itemOwn.addActionListener(e -> this.chooseOwnImages());
+        menuImages.add(itemOwn);
+        JMenuBar menuBar = new JMenuBar();
+        menuBar.add(menuImages);
+        this.frame.setJMenuBar(menuBar);
 
         this.lblRemaining = new JLabel("", SwingConstants.CENTER);
         this.lblRemaining.setBounds(20, 10, 360, 20);
@@ -96,6 +115,54 @@ public class PlayerChooser {
         this.btnPick.addActionListener(e -> this.toggle());
         this.btnPick.setBounds(100, 250, 200, 36);
         this.frame.getContentPane().add(this.btnPick);
+    }
+
+    /**
+     * Loads a set of images and starts a new session with them. If the set is empty and a session
+     * already exists, keeps the current session and returns false.
+     */
+    boolean load(ImageChooser source) {
+        List<Student> students = source.getImages();
+        if (students.isEmpty() && this.pool != null) {
+            return false;
+        }
+        this.frame.setTitle(TITLE + " — " + source.description());
+        this.startSession(students);
+        return true;
+    }
+
+    private void loadDemoImages() {
+        if (this.confirmNewSession()) {
+            this.load(new ImageChooser());
+        }
+    }
+
+    private void chooseOwnImages() {
+        JFileChooser chooser = new JFileChooser();
+        chooser.setDialogTitle("Choose the folder with your class photos");
+        chooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+        if (chooser.showOpenDialog(this.frame) != JFileChooser.APPROVE_OPTION || !this.confirmNewSession()) {
+            return;
+        }
+        String folder = chooser.getSelectedFile().getPath();
+        if (!this.load(new ImageChooser(folder))) {
+            JOptionPane.showMessageDialog(this.frame,
+                    "No photos found in " + folder + "\nSupported formats: PNG, JPG, JPEG, GIF.",
+                    "No photos", JOptionPane.WARNING_MESSAGE);
+        }
+    }
+
+    /** Asks before throwing away a session in which some students have already participated. */
+    private boolean confirmNewSession() {
+        int picked = this.pool.picked().size();
+        if (picked == 0) {
+            return true;
+        }
+        int answer = JOptionPane.showConfirmDialog(this.frame,
+                picked + " of " + this.pool.total() + " students have already participated.\n"
+                        + "Load new images and start a new session?",
+                "Start a new session?", JOptionPane.YES_NO_OPTION);
+        return answer == JOptionPane.YES_OPTION;
     }
 
     /** Starts a new session: every student is back in the pool. */

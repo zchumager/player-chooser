@@ -21,6 +21,8 @@ import java.util.Locale;
 public class ImageChooser {
     /* Demo images bundled on the classpath (src/main/resources/img) */
     static final String BUNDLED_FOLDER = "img";
+    /* Folder of class photos looked for in the working directory at startup */
+    static final String CLASS_FOLDER = "img";
     private static final String[] IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".gif"};
 
     /* Path of an external folder; null means the bundled demo images */
@@ -34,6 +36,38 @@ public class ImageChooser {
     /** Uses the images in the given folder. */
     public ImageChooser(String path) {
         this.path = path;
+    }
+
+    /**
+     * Picks the images to start with: the folder given on the command line, otherwise an "img"
+     * folder in the working directory, otherwise the bundled demo images.
+     */
+    static ImageChooser forStartup(String[] args, Path workingDir) {
+        if (args.length > 0) {
+            return new ImageChooser(args[0]);
+        }
+        Path classFolder = workingDir.resolve(CLASS_FOLDER);
+        if (Files.isDirectory(classFolder)) {
+            return new ImageChooser(classFolder.toString());
+        }
+        return new ImageChooser();
+    }
+
+    public boolean isDemo() {
+        return this.path == null;
+    }
+
+    /** A short name for the image source, for the window title: "Demo images" or the folder's name. */
+    public String description() {
+        if (this.path == null) {
+            return "Demo images";
+        }
+        try {
+            Path folder = Paths.get(this.path).toAbsolutePath().normalize();
+            return folder.getFileName() != null ? folder.getFileName().toString() : folder.toString();
+        } catch (RuntimeException e) {
+            return this.path;
+        }
     }
 
     /** Returns one student per image file, sorted by name. Empty if the folder is missing or unreadable. */
