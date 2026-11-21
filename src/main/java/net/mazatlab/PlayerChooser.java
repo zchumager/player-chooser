@@ -146,8 +146,7 @@ public class PlayerChooser {
         if (students.isEmpty() && this.pool != null) {
             return false;
         }
-        this.frame.setTitle(TITLE + " — " + source.description());
-        this.startSession(students);
+        this.startSession(source, students);
         return true;
     }
 
@@ -157,19 +156,34 @@ public class PlayerChooser {
         }
     }
 
+    /* Checks the folder before asking to replace the session, so a folder without photos never
+     * costs the teacher a confirmation for nothing */
     private void chooseOwnImages() {
         JFileChooser chooser = new JFileChooser();
         chooser.setDialogTitle("Choose the folder with your class photos");
         chooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
-        if (chooser.showOpenDialog(this.frame) != JFileChooser.APPROVE_OPTION || !this.confirmNewSession()) {
+        if (chooser.showOpenDialog(this.frame) != JFileChooser.APPROVE_OPTION) {
             return;
         }
         String folder = chooser.getSelectedFile().getPath();
-        if (!this.load(new ImageChooser(folder))) {
+        ImageChooser source = new ImageChooser(folder);
+        List<Student> students = source.getImages();
+        if (students.isEmpty()) {
             JOptionPane.showMessageDialog(this.frame,
-                    "No photos found in " + folder + "\nSupported formats: PNG, JPG, JPEG, GIF.",
+                    "No photos found in " + folder + "\n"
+                            + "Supported formats: PNG, JPG, JPEG, GIF.\n"
+                            + "iPhone photos in HEIC format need to be exported as JPG first.",
                     "No photos", JOptionPane.WARNING_MESSAGE);
+            return;
         }
+        if (this.confirmNewSession()) {
+            this.startSession(source, students);
+        }
+    }
+
+    private void startSession(ImageChooser source, List<Student> students) {
+        this.frame.setTitle(TITLE + " — " + source.description());
+        this.startSession(students);
     }
 
     /** Asks before throwing away a session in which some students have already participated. */
