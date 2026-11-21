@@ -118,7 +118,9 @@ public class PlayerChooser {
         this.lblPlayer.setBorder(BorderFactory.createLineBorder(Color.BLACK));
         this.lblPlayer.setBounds(120, 40, PHOTO_BOX, PHOTO_BOX);
         this.lblPlayer.addMouseListener(new MouseAdapter() {
-            public void mouseClicked(MouseEvent e) {
+            /* mousePressed, not mouseClicked: Swing drops the click if the mouse moves even a
+             * pixel between press and release, and "stop now" should never be missed */
+            public void mousePressed(MouseEvent e) {
                 PlayerChooser.this.stop();
             }
         });
