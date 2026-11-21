@@ -4,7 +4,10 @@ import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.EventQueue;
 import java.awt.Font;
+import java.awt.Graphics2D;
 import java.awt.Image;
+import java.awt.image.BufferedImage;
+import java.io.IOException;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.nio.file.Paths;
@@ -13,6 +16,7 @@ import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
 
+import javax.imageio.ImageIO;
 import javax.swing.BorderFactory;
 import javax.swing.Icon;
 import javax.swing.ImageIcon;
@@ -37,6 +41,10 @@ public class PlayerChooser {
     private static final int CYCLE_MILLIS = 100;
     private static final int PHOTO_BOX = 160;
     private static final int PHOTO_MAX = PHOTO_BOX - 10; // leaves a margin inside the border
+    private static final float PLACEHOLDER_FONT_SIZE = 32f;
+    private static final float NAME_FONT_SIZE = 18f;
+    /* Cached for photos that can't be decoded; has no size, so the student's name is shown */
+    static final Icon UNREADABLE = new ImageIcon();
     private static final String START_TEXT = "Pick a student";
     private static final String STOP_TEXT = "Stop";
 
@@ -47,7 +55,9 @@ public class PlayerChooser {
     private JLabel lblName;
 
     private final Random random = new Random();
-    private final Map<Student, Icon> icons = new ConcurrentHashMap<>();
+    /* Scaled photos for the current session. Replaced (not cleared) when a session starts, so a
+     * loader from an earlier session notices it's stale and stops. */
+    private volatile Map<Student, Icon> icons = new ConcurrentHashMap<>();
     private StudentPool pool;
     private Student current;
     private Timer timer;
@@ -179,12 +189,12 @@ public class PlayerChooser {
             this.timer.stop();
         }
         this.btnPick.setText(START_TEXT);
-        this.icons.clear();
-        this.preloadPhotos(students);
+        Map<Student, Icon> sessionIcons = new ConcurrentHashMap<>();
+        this.icons = sessionIcons;
+        this.preloadPhotos(students, sessionIcons);
         this.pool = new StudentPool(students, this.random);
         this.current = null;
-        this.lblPlayer.setIcon(null);
-        this.lblPlayer.setText(students.isEmpty() ? "No images" : "?");
+        this.showText(students.isEmpty() ? "No images" : "?", PLACEHOLDER_FONT_SIZE);
         this.lblName.setText(" ");
         this.updateStatus();
     }
@@ -226,34 +236,71 @@ public class PlayerChooser {
         return this.timer != null && this.timer.isRunning();
     }
 
+    /* Never decodes on the UI thread: a photo that isn't loaded yet, or can't be read, is shown as
+     * the student's name instead */
     private void showCandidate() {
         this.current = this.pool.randomCandidate();
-        this.lblPlayer.setText(null);
-        this.lblPlayer.setIcon(this.iconFor(this.current));
+        Icon icon = this.icons.get(this.current);
+        if (icon != null && icon.getIconWidth() > 0) {
+            this.lblPlayer.setText(null);
+            this.lblPlayer.setIcon(icon);
+        } else {
+            this.showText(this.current.name(), NAME_FONT_SIZE);
+        }
     }
 
-    /* Decoding large photos is slow, so each is scaled once, in the background, and cached */
-    private void preloadPhotos(List<Student> students) {
+    private void showText(String text, float fontSize) {
+        this.lblPlayer.setIcon(null);
+        this.lblPlayer.setFont(this.lblPlayer.getFont().deriveFont(Font.BOLD, fontSize));
+        this.lblPlayer.setText("<html><div style='text-align:center'>" + escapeHtml(text) + "</div></html>");
+    }
+
+    private static String escapeHtml(String text) {
+        return text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;");
+    }
+
+    /* Decoding large photos is slow, so each is scaled once, in the background, into this
+     * session's cache. The loader stops as soon as a newer session replaces the cache. */
+    private void preloadPhotos(List<Student> students, Map<Student, Icon> sessionIcons) {
         List<Student> copy = List.copyOf(students);
-        Thread preload = new Thread(() -> copy.forEach(this::iconFor), "photo-preload");
+        Thread preload = new Thread(() -> {
+            for (Student student : copy) {
+                if (this.icons != sessionIcons) {
+                    return;
+                }
+                sessionIcons.put(student, scaledIcon(student));
+            }
+        }, "photo-preload");
         preload.setDaemon(true);
         preload.start();
     }
 
-    private Icon iconFor(Student student) {
-        return this.icons.computeIfAbsent(student, PlayerChooser::scaledIcon);
-    }
-
-    /** Loads a photo scaled down to fit the picture box. Small photos are not enlarged. */
-    private static Icon scaledIcon(Student student) {
-        ImageIcon original = new ImageIcon(student.image());
-        int width = original.getIconWidth();
-        int height = original.getIconHeight();
-        if (width <= 0 || height <= 0 || (width <= PHOTO_MAX && height <= PHOTO_MAX)) {
-            return original;
+    /**
+     * Loads a photo scaled down to fit the picture box; small photos are not enlarged. Only the
+     * scaled copy is kept in memory. Returns {@link #UNREADABLE} if the file can't be decoded.
+     */
+    static Icon scaledIcon(Student student) {
+        BufferedImage original;
+        try {
+            original = ImageIO.read(student.image());
+        } catch (IOException | RuntimeException e) {
+            System.out.println("Could not read " + student.image() + ": " + e.getMessage());
+            return UNREADABLE;
         }
-        Dimension size = fitWithin(width, height, PHOTO_MAX);
-        return new ImageIcon(original.getImage().getScaledInstance(size.width, size.height, Image.SCALE_SMOOTH));
+        if (original == null) {
+            System.out.println("Not a readable image: " + student.image());
+            return UNREADABLE;
+        }
+        Dimension size = fitWithin(original.getWidth(), original.getHeight(), PHOTO_MAX);
+        if (size.width == original.getWidth() && size.height == original.getHeight()) {
+            return new ImageIcon(original);
+        }
+        Image smooth = original.getScaledInstance(size.width, size.height, Image.SCALE_SMOOTH);
+        BufferedImage scaled = new BufferedImage(size.width, size.height, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g = scaled.createGraphics();
+        g.drawImage(new ImageIcon(smooth).getImage(), 0, 0, null); // ImageIcon waits for the scaling
+        g.dispose();
+        return new ImageIcon(scaled);
     }
 
     /** The largest size with the same proportions that fits in a max × max box, never enlarged. */
