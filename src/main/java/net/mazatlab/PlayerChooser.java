@@ -86,8 +86,11 @@ public class PlayerChooser {
         this.lblPlayer.setBounds(120, 130, 120, 130);
         this.lblPlayer.addMouseListener(new MouseAdapter(){
             public void mouseClicked(MouseEvent e) {
-                PlayerChooser.this.timer.stop();
-                PlayerChooser.this.btnSortear.setEnabled(true);
+                Timer timer = PlayerChooser.this.timer;
+                if (timer != null && timer.isRunning()) {
+                    timer.stop();
+                    PlayerChooser.this.btnSortear.setEnabled(true);
+                }
             }
         });
         this.frame.getContentPane().add(lblPlayer);
