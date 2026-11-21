@@ -1,46 +1,38 @@
 package net.mazatlab;
 
-import java.io.File;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.io.IOException;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 
-import junit.framework.TestCase;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
-public class ImageChooserTest extends TestCase {
+class ImageChooserTest {
 
-    private Path tempDir;
-
-    @Override
-    protected void setUp() throws IOException {
-        this.tempDir = Files.createTempDirectory("player-chooser-test");
-    }
-
-    @Override
-    protected void tearDown() throws IOException {
-        File[] files = this.tempDir.toFile().listFiles();
-        if (files != null) {
-            for (File file : files) {
-                file.delete();
-            }
-        }
-        Files.deleteIfExists(this.tempDir);
-    }
+    @TempDir
+    Path tempDir;
 
     private void createFile(String name) throws IOException {
         Files.createFile(this.tempDir.resolve(name));
     }
 
-    public void testBundledImagesLoadFromClasspath() {
+    @Test
+    void bundledImagesLoadFromClasspath() {
         ImageChooser chooser = new ImageChooser();
 
         assertEquals(7, chooser.getImages().size());
         assertNotNull(chooser.getDefaultImage());
     }
 
-    public void testExternalFolderImagesAreLoaded() throws IOException {
+    @Test
+    void externalFolderImagesAreLoaded() throws IOException {
         createFile("a.png");
         createFile("b.jpg");
 
@@ -49,7 +41,8 @@ public class ImageChooserTest extends TestCase {
         assertEquals(2, images.size());
     }
 
-    public void testOnlyImageFilesAreLoaded() throws IOException {
+    @Test
+    void onlyImageFilesAreLoaded() throws IOException {
         createFile("a.png");
         createFile("b.JPG");
         createFile("c.jpeg");
@@ -64,14 +57,16 @@ public class ImageChooserTest extends TestCase {
         assertEquals(4, images.size());
     }
 
-    public void testInvalidFolderPathReturnsNoImages() {
+    @Test
+    void invalidFolderPathReturnsNoImages() {
         ImageChooser chooser = new ImageChooser("bad\u0000path");
 
         assertTrue(chooser.getImages().isEmpty());
         assertNull(chooser.getDefaultImage());
     }
 
-    public void testMissingFolderReturnsNoImages() {
+    @Test
+    void missingFolderReturnsNoImages() {
         ImageChooser chooser = new ImageChooser(this.tempDir.resolve("missing").toString());
 
         assertTrue(chooser.getImages().isEmpty());
