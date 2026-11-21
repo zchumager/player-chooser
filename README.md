@@ -16,7 +16,8 @@ session**, so everyone gets a turn before anyone repeats. A session lasts until 
   folder of class photos) and **Load demo images** (bundled sample photos, handy for trying the
   app out). Loading a new set starts a new session; the app asks first if students have already
   participated.
-- **Any photo size:** large photos, such as phone pictures, are scaled down to fit.
+- **Any photo size:** large photos, such as phone pictures, are scaled down to fit. They load in
+  the background; until a photo is ready, the student's name is shown in its place.
 
 ## Requirements
 
@@ -33,8 +34,12 @@ java -jar target/player-chooser-1.0-SNAPSHOT.jar
 ## Preparing your class photos
 
 1. Put one photo per student in a folder. Supported formats: PNG, JPG/JPEG, GIF.
+   - iPhone photos are often HEIC, which isn't supported: export them as JPG first.
+   - Phone photos taken in portrait may appear sideways, because the app doesn't read the
+     rotation stored in the photo. Rotate and save them in a photo editor if that happens.
 2. Name each photo after the student. The name shown is the file name without the extension, with
-   underscores turned into spaces: `maria_lopez.jpg` is shown as **maria lopez**.
+   underscores turned into spaces: `maria_lopez.jpg` is shown as **maria lopez**. Names must be
+   unique: if two photos give the same name (`ana.png` and `Ana.jpg`), only one is used.
 3. Load the folder in any of these ways:
    - Choose **Images → Load my images…** in the app.
    - Name the folder `img` and start the app from the folder that contains it.
