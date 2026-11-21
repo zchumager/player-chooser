@@ -53,6 +53,18 @@ class ImageChooserTest {
     }
 
     @Test
+    void photosWithTheSameNameCountAsOneStudent() throws IOException {
+        createFile("ana.png");
+        createFile("Ana.jpg");
+        createFile("luis.png");
+
+        List<String> names = loadTempDir().stream().map(Student::name).toList();
+
+        // Ties are broken by file name, so the same photo is kept every time
+        assertEquals(List.of("Ana", "luis"), names);
+    }
+
+    @Test
     void onlyImageFilesAreLoaded() throws IOException {
         createFile("a.png");
         createFile("b.JPG");

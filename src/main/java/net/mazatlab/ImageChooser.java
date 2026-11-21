@@ -14,8 +14,10 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 
 /** Loads the student photos, either the bundled demo images or a folder of the user's own. */
 public class ImageChooser {
@@ -92,9 +94,27 @@ public class ImageChooser {
             System.out.println("Could not read the image folder: " + e.getMessage());
         }
 
-        students.sort(Comparator.comparing(Student::name, String.CASE_INSENSITIVE_ORDER));
-        System.out.println("Found " + students.size() + " images");
-        return students;
+        // Ties are broken by file name so the order, and which duplicate is kept, never changes
+        students.sort(Comparator.comparing(Student::name, String.CASE_INSENSITIVE_ORDER)
+                .thenComparing(student -> student.image().toString()));
+        List<Student> unique = withoutDuplicateNames(students);
+        System.out.println("Found " + unique.size() + " images");
+        return unique;
+    }
+
+    /* Two photos with the same name (e.g. ana.png and Ana.jpg) would let a student be picked twice
+     * in one session, so only the first one is kept. Expects the list sorted by name. */
+    private static List<Student> withoutDuplicateNames(List<Student> sorted) {
+        List<Student> unique = new ArrayList<Student>();
+        Set<String> seen = new HashSet<String>();
+        for (Student student : sorted) {
+            if (seen.add(student.name().toLowerCase(Locale.ROOT))) {
+                unique.add(student);
+            } else {
+                System.out.println("Skipped " + student.image() + ": another photo is already named \"" + student.name() + "\"");
+            }
+        }
+        return unique;
     }
 
     /* Only formats ImageIcon can display; skips hidden files such as .DS_Store or ._photo.png */
