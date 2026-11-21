@@ -59,6 +59,7 @@ public class PlayerChooser {
      * loader from an earlier session notices it's stale and stops. */
     private volatile Map<Student, Icon> icons = new ConcurrentHashMap<>();
     private StudentPool pool;
+    private String sourceDescription = "";
     private Student current;
     private Timer timer;
 
@@ -182,7 +183,8 @@ public class PlayerChooser {
     }
 
     private void startSession(ImageChooser source, List<Student> students) {
-        this.frame.setTitle(TITLE + " — " + source.description());
+        this.sourceDescription = source.description();
+        this.frame.setTitle(TITLE + " — " + this.sourceDescription);
         this.startSession(students);
     }
 
@@ -329,7 +331,8 @@ public class PlayerChooser {
 
     private void updateStatus() {
         if (this.pool.total() == 0) {
-            this.lblRemaining.setText("No images found");
+            // Says which folder, so a mistyped command-line path or an empty img folder is obvious
+            this.lblRemaining.setText("No photos found in “" + this.sourceDescription + "”");
             this.btnPick.setEnabled(false);
         } else if (this.pool.isEmpty()) {
             this.lblRemaining.setText("Everyone has participated (" + this.pool.total() + " students)");

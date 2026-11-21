@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.nio.file.DirectoryIteratorException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystemAlreadyExistsException;
@@ -90,7 +91,9 @@ public class ImageChooser {
                     students.add(new Student(name, toUrl(file)));
                 }
             }
-        } catch (IOException e) {
+        } catch (IOException | DirectoryIteratorException e) {
+            // DirectoryIteratorException is unchecked and thrown while iterating, e.g. if the
+            // folder becomes unreadable midway
             System.out.println("Could not read the image folder: " + e.getMessage());
         }
 
