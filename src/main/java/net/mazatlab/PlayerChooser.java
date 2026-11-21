@@ -44,11 +44,21 @@ public class PlayerChooser {
      * Create the application.
      */
     public PlayerChooser() {
+        this(new ImageChooser());
+    }
+
+    PlayerChooser(ImageChooser imageChooser) {
         this.initialize();
-        this.imageChooser = new ImageChooser();
+        this.imageChooser = imageChooser;
         this.setDefaultImage();
 
         this.files = this.imageChooser.getImages();
+        if (this.files.isEmpty()) {
+            this.btnSortear.setEnabled(false);
+            this.lblPlayer.setForeground(Color.DARK_GRAY);
+            this.lblPlayer.setHorizontalAlignment(JLabel.CENTER);
+            this.lblPlayer.setText("Sin imágenes");
+        }
     }
 
     /**
@@ -92,6 +102,9 @@ public class PlayerChooser {
     }
 
     public void raffle() {
+        if (this.files.isEmpty()) {
+            return;
+        }
         this.timer = new Timer(100, new ActionListener() {
 
             int low = 0;
