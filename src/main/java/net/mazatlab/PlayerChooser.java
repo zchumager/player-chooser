@@ -6,7 +6,6 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.net.URL;
 import java.util.List;
 import java.util.Random;
 
@@ -23,7 +22,7 @@ public class PlayerChooser {
     private JButton btnSortear;
 
     private ImageChooser imageChooser;
-    private List<URL> files;
+    private List<Student> files;
     private JLabel lblPlayer;
     private Timer timer;
 
@@ -50,13 +49,13 @@ public class PlayerChooser {
     PlayerChooser(ImageChooser imageChooser) {
         this.initialize();
         this.imageChooser = imageChooser;
-        this.setDefaultImage();
 
         this.files = this.imageChooser.getImages();
+        this.lblPlayer.setForeground(Color.DARK_GRAY);
+        this.lblPlayer.setHorizontalAlignment(JLabel.CENTER);
+        this.lblPlayer.setText("?");
         if (this.files.isEmpty()) {
             this.btnSortear.setEnabled(false);
-            this.lblPlayer.setForeground(Color.DARK_GRAY);
-            this.lblPlayer.setHorizontalAlignment(JLabel.CENTER);
             this.lblPlayer.setText("Sin imágenes");
         }
     }
@@ -96,14 +95,6 @@ public class PlayerChooser {
         this.frame.getContentPane().add(lblPlayer);
     }
 
-    public void setDefaultImage(){
-        URL defaultImage = this.imageChooser.getDefaultImage();
-        if (defaultImage != null) {
-            this.lblPlayer.setIcon(new ImageIcon(defaultImage));
-        }
-
-    }
-
     public void raffle() {
         if (this.files.isEmpty() || (this.timer != null && this.timer.isRunning())) {
             return;
@@ -117,7 +108,8 @@ public class PlayerChooser {
 
             @Override public void actionPerformed(ActionEvent e) {
                 int index = random.nextInt(high-low)+low;
-                PlayerChooser.this.lblPlayer.setIcon(new ImageIcon(files.get(index)));
+                PlayerChooser.this.lblPlayer.setText(null);
+                PlayerChooser.this.lblPlayer.setIcon(new ImageIcon(files.get(index).image()));
             }
         });
         this.timer.start();

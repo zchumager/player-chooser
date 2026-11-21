@@ -13,69 +13,57 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 
+/** Loads the student photos, either the bundled demo images or a folder of the user's own. */
 public class ImageChooser {
-    /* Carpeta de imagenes incluida en el classpath (src/main/resources/img) */
+    /* Demo images bundled on the classpath (src/main/resources/img) */
     static final String BUNDLED_FOLDER = "img";
-    static final String DEFAULT_IMAGE = "jugador(0).png";
     private static final String[] IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".gif"};
 
-    /* Ruta de una carpeta externa; null significa usar las imagenes incluidas en el classpath */
+    /* Path of an external folder; null means the bundled demo images */
     private final String path;
 
-    /* El constructor sin argumentos usa las imagenes incluidas en la aplicacion, asi que
-     * funciona sin importar desde que carpeta se ejecute */
+    /** Uses the bundled demo images, which works from any directory and from the jar. */
     public ImageChooser() {
         this.path = null;
     }
 
-    //En este constructor se puede definir la ruta de la carpeta contenedora de imagenes
+    /** Uses the images in the given folder. */
     public ImageChooser(String path) {
         this.path = path;
     }
 
-    /** Returns the default image, or null if the folder doesn't contain it. */
-    public URL getDefaultImage() {
-        Path folder = this.resolveFolder();
-        if (folder == null) {
-            return null;
-        }
-        Path defaultImage = folder.resolve(DEFAULT_IMAGE);
-        System.out.println("Ruta de la imagen por defecto " + defaultImage);
-        return Files.isRegularFile(defaultImage) ? toUrl(defaultImage) : null;
-    }
-
-    public List<URL> getImages() {
-        List<URL> images = new ArrayList<URL>();
+    /** Returns one student per image file, sorted by name. Empty if the folder is missing or unreadable. */
+    public List<Student> getImages() {
+        List<Student> students = new ArrayList<Student>();
 
         Path folder = this.resolveFolder();
-        System.out.println("Ruta de la carpeta con las imagenes: " + folder);
+        System.out.println("Image folder: " + folder);
         if (folder == null || !Files.isDirectory(folder)) {
-            System.out.println("No se encontro la carpeta de imagenes");
-            return images;
+            System.out.println("Image folder not found");
+            return students;
         }
 
         try (DirectoryStream<Path> stream = Files.newDirectoryStream(folder)) {
             for (Path file : stream) {
                 if (Files.isRegularFile(file) && isImage(file)) {
-                    images.add(toUrl(file));
+                    String name = Student.nameFromFileName(file.getFileName().toString());
+                    students.add(new Student(name, toUrl(file)));
                 }
             }
         } catch (IOException e) {
-            System.out.println("No se pudo leer la carpeta de imagenes: " + e.getMessage());
+            System.out.println("Could not read the image folder: " + e.getMessage());
         }
 
-        if (images.isEmpty()) {
-            System.out.println("La carpeta no tiene imagenes");
-        } else {
-            System.out.println("La carpeta contiene " + images.size() + " imagenes");
-        }
-        return images;
+        students.sort(Comparator.comparing(Student::name, String.CASE_INSENSITIVE_ORDER));
+        System.out.println("Found " + students.size() + " images");
+        return students;
     }
 
-    /* Solo formatos que ImageIcon puede mostrar; ignora archivos ocultos como .DS_Store o ._foto.png */
+    /* Only formats ImageIcon can display; skips hidden files such as .DS_Store or ._photo.png */
     static boolean isImage(Path file) {
         String name = file.getFileName().toString().toLowerCase(Locale.ROOT);
         if (name.startsWith(".")) {
@@ -89,7 +77,7 @@ public class ImageChooser {
         return false;
     }
 
-    /* Resuelve la carpeta externa, o la carpeta incluida en el classpath (en disco o dentro del jar) */
+    /* Resolves the external folder, or the bundled folder on the classpath (on disk or inside the jar) */
     private Path resolveFolder() {
         try {
             if (this.path != null) {
@@ -105,8 +93,8 @@ public class ImageChooser {
             }
             return Paths.get(uri);
         } catch (URISyntaxException | IOException | RuntimeException e) {
-            // Rutas invalidas (InvalidPathException) o sistemas de archivos no soportados
-            System.out.println("No se pudo abrir la carpeta de imagenes: " + e.getMessage());
+            // Invalid paths (InvalidPathException) or unsupported file systems
+            System.out.println("Could not open the image folder: " + e.getMessage());
             return null;
         }
     }

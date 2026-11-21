@@ -1,12 +1,9 @@
 package net.mazatlab;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
-import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -23,12 +20,16 @@ class ImageChooserTest {
         Files.createFile(this.tempDir.resolve(name));
     }
 
-    @Test
-    void bundledImagesLoadFromClasspath() {
-        ImageChooser chooser = new ImageChooser();
+    private List<Student> loadTempDir() {
+        return new ImageChooser(this.tempDir.toString()).getImages();
+    }
 
-        assertEquals(7, chooser.getImages().size());
-        assertNotNull(chooser.getDefaultImage());
+    @Test
+    void bundledDemoImagesLoadFromClasspath() {
+        List<Student> students = new ImageChooser().getImages();
+
+        assertEquals(7, students.size());
+        assertEquals("player 1", students.get(0).name());
     }
 
     @Test
@@ -36,9 +37,18 @@ class ImageChooserTest {
         createFile("a.png");
         createFile("b.jpg");
 
-        List<URL> images = new ImageChooser(this.tempDir.toString()).getImages();
+        assertEquals(2, loadTempDir().size());
+    }
 
-        assertEquals(2, images.size());
+    @Test
+    void studentsAreNamedAfterTheirFilesAndSortedByName() throws IOException {
+        createFile("zoe.png");
+        createFile("maria_lopez.jpg");
+        createFile("Ana.png");
+
+        List<String> names = loadTempDir().stream().map(Student::name).toList();
+
+        assertEquals(List.of("Ana", "maria lopez", "zoe"), names);
     }
 
     @Test
@@ -52,17 +62,12 @@ class ImageChooserTest {
         createFile("png");
         createFile("._e.png"); // macOS metadata file on external drives
 
-        List<URL> images = new ImageChooser(this.tempDir.toString()).getImages();
-
-        assertEquals(4, images.size());
+        assertEquals(4, loadTempDir().size());
     }
 
     @Test
     void invalidFolderPathReturnsNoImages() {
-        ImageChooser chooser = new ImageChooser("bad\u0000path");
-
-        assertTrue(chooser.getImages().isEmpty());
-        assertNull(chooser.getDefaultImage());
+        assertTrue(new ImageChooser("bad\u0000path").getImages().isEmpty());
     }
 
     @Test
@@ -70,6 +75,5 @@ class ImageChooserTest {
         ImageChooser chooser = new ImageChooser(this.tempDir.resolve("missing").toString());
 
         assertTrue(chooser.getImages().isEmpty());
-        assertNull(chooser.getDefaultImage());
     }
 }
