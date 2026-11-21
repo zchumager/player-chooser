@@ -83,7 +83,7 @@ public class PlayerChooser {
      */
     private void initialize() {
         this.frame = new JFrame(TITLE);
-        this.frame.setBounds(100, 100, 400, 380);
+        this.frame.setBounds(100, 100, 400, 352);
         this.frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         this.frame.getContentPane().setLayout(null);
 
