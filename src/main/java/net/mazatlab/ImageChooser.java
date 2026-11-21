@@ -75,9 +75,12 @@ public class ImageChooser {
         return images;
     }
 
-    /* Solo formatos que ImageIcon puede mostrar; ignora archivos como .DS_Store */
+    /* Solo formatos que ImageIcon puede mostrar; ignora archivos ocultos como .DS_Store o ._foto.png */
     static boolean isImage(Path file) {
         String name = file.getFileName().toString().toLowerCase(Locale.ROOT);
+        if (name.startsWith(".")) {
+            return false;
+        }
         for (String extension : IMAGE_EXTENSIONS) {
             if (name.endsWith(extension)) {
                 return true;
@@ -88,20 +91,21 @@ public class ImageChooser {
 
     /* Resuelve la carpeta externa, o la carpeta incluida en el classpath (en disco o dentro del jar) */
     private Path resolveFolder() {
-        if (this.path != null) {
-            return Paths.get(this.path);
-        }
-        URL url = ImageChooser.class.getResource("/" + BUNDLED_FOLDER);
-        if (url == null) {
-            return null;
-        }
         try {
+            if (this.path != null) {
+                return Paths.get(this.path);
+            }
+            URL url = ImageChooser.class.getResource("/" + BUNDLED_FOLDER);
+            if (url == null) {
+                return null;
+            }
             URI uri = url.toURI();
             if ("jar".equals(uri.getScheme())) {
                 return jarFileSystem(uri).getPath("/" + BUNDLED_FOLDER);
             }
             return Paths.get(uri);
-        } catch (URISyntaxException | IOException e) {
+        } catch (URISyntaxException | IOException | RuntimeException e) {
+            // Rutas invalidas (InvalidPathException) o sistemas de archivos no soportados
             System.out.println("No se pudo abrir la carpeta de imagenes: " + e.getMessage());
             return null;
         }

@@ -57,10 +57,18 @@ public class ImageChooserTest extends TestCase {
         createFile(".DS_Store");
         createFile("notes.txt");
         createFile("png");
+        createFile("._e.png"); // macOS metadata file on external drives
 
         List<URL> images = new ImageChooser(this.tempDir.toString()).getImages();
 
         assertEquals(4, images.size());
+    }
+
+    public void testInvalidFolderPathReturnsNoImages() {
+        ImageChooser chooser = new ImageChooser("bad\u0000path");
+
+        assertTrue(chooser.getImages().isEmpty());
+        assertNull(chooser.getDefaultImage());
     }
 
     public void testMissingFolderReturnsNoImages() {
