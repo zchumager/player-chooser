@@ -54,7 +54,18 @@ current directory, or the demo images.
 ## Development
 
 ```bash
-mvn test
+mvn test                      # all tests; window tests are skipped without a display (e.g. CI)
+mvn test -Dui.dialogs=true    # also drives the folder chooser and message dialogs (they flash on screen)
+```
+
+`PlayerChooserUiTest` drives the real window without showing it: full sessions, Start/Stop,
+switching image sets, and that the window doesn't freeze while large photos load.
+
+To regenerate the README screenshot:
+
+```bash
+mvn test-compile
+java -cp target/classes:target/test-classes net.mazatlab.ScreenshotTool docs/screenshot.png
 ```
 
 The picking rules live in `StudentPool` and are tested without a display. `ImageChooser` loads the

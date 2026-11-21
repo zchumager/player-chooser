@@ -48,17 +48,18 @@ public class PlayerChooser {
     private static final String START_TEXT = "Pick a student";
     private static final String STOP_TEXT = "Stop";
 
-    private JFrame frame;
-    private JButton btnPick;
-    private JLabel lblRemaining;
-    private JLabel lblPlayer;
-    private JLabel lblName;
+    // Components and session state are package-private so PlayerChooserUiTest can inspect them
+    JFrame frame;
+    JButton btnPick;
+    JLabel lblRemaining;
+    JLabel lblPlayer;
+    JLabel lblName;
 
     private final Random random = new Random();
     /* Scaled photos for the current session. Replaced (not cleared) when a session starts, so a
      * loader from an earlier session notices it's stale and stops. */
-    private volatile Map<Student, Icon> icons = new ConcurrentHashMap<>();
-    private StudentPool pool;
+    volatile Map<Student, Icon> icons = new ConcurrentHashMap<>();
+    StudentPool pool;
     private String sourceDescription = "";
     private Student current;
     private Timer timer;
