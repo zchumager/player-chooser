@@ -23,6 +23,8 @@ import javax.swing.Timer;
 public class PlayerChooser {
 
     private static final int CYCLE_MILLIS = 100;
+    private static final String START_TEXT = "Pick a student";
+    private static final String STOP_TEXT = "Stop";
 
     private JFrame frame;
     private JButton btnPick;
@@ -90,8 +92,8 @@ public class PlayerChooser {
         this.lblName.setBounds(20, 210, 360, 28);
         this.frame.getContentPane().add(this.lblName);
 
-        this.btnPick = new JButton("Pick a student");
-        this.btnPick.addActionListener(e -> this.raffle());
+        this.btnPick = new JButton(START_TEXT);
+        this.btnPick.addActionListener(e -> this.toggle());
         this.btnPick.setBounds(100, 250, 200, 36);
         this.frame.getContentPane().add(this.btnPick);
     }
@@ -101,6 +103,7 @@ public class PlayerChooser {
         if (this.timer != null) {
             this.timer.stop();
         }
+        this.btnPick.setText(START_TEXT);
         this.pool = new StudentPool(students, this.random);
         this.current = null;
         this.lblPlayer.setIcon(null);
@@ -109,12 +112,21 @@ public class PlayerChooser {
         this.updateStatus();
     }
 
+    /** The button starts the photos cycling, or stops them if they already are. */
+    void toggle() {
+        if (this.isRunning()) {
+            this.stop();
+        } else {
+            this.raffle();
+        }
+    }
+
     /** Starts cycling through the photos of the students who haven't participated yet. */
     public void raffle() {
         if (this.pool.isEmpty() || this.isRunning()) {
             return;
         }
-        this.btnPick.setEnabled(false);
+        this.btnPick.setText(STOP_TEXT);
         this.lblName.setText(" ");
         this.showCandidate();
         this.timer = new Timer(CYCLE_MILLIS, e -> this.showCandidate());
@@ -127,6 +139,7 @@ public class PlayerChooser {
             return;
         }
         this.timer.stop();
+        this.btnPick.setText(START_TEXT);
         this.pool.pick(this.current);
         this.lblName.setText(this.current.name());
         this.updateStatus();
