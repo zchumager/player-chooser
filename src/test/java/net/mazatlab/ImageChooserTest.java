@@ -49,6 +49,20 @@ public class ImageChooserTest extends TestCase {
         assertEquals(2, images.size());
     }
 
+    public void testOnlyImageFilesAreLoaded() throws IOException {
+        createFile("a.png");
+        createFile("b.JPG");
+        createFile("c.jpeg");
+        createFile("d.gif");
+        createFile(".DS_Store");
+        createFile("notes.txt");
+        createFile("png");
+
+        List<URL> images = new ImageChooser(this.tempDir.toString()).getImages();
+
+        assertEquals(4, images.size());
+    }
+
     public void testMissingFolderReturnsNoImages() {
         ImageChooser chooser = new ImageChooser(this.tempDir.resolve("missing").toString());
 

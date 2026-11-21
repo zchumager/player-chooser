@@ -14,11 +14,13 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 
 public class ImageChooser {
     /* Carpeta de imagenes incluida en el classpath (src/main/resources/img) */
     static final String BUNDLED_FOLDER = "img";
     static final String DEFAULT_IMAGE = "jugador(0).png";
+    private static final String[] IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".gif"};
 
     /* Ruta de una carpeta externa; null significa usar las imagenes incluidas en el classpath */
     private final String path;
@@ -57,7 +59,7 @@ public class ImageChooser {
 
         try (DirectoryStream<Path> stream = Files.newDirectoryStream(folder)) {
             for (Path file : stream) {
-                if (Files.isRegularFile(file)) {
+                if (Files.isRegularFile(file) && isImage(file)) {
                     images.add(toUrl(file));
                 }
             }
@@ -66,11 +68,22 @@ public class ImageChooser {
         }
 
         if (images.isEmpty()) {
-            System.out.println("La carpeta no tiene archivos");
+            System.out.println("La carpeta no tiene imagenes");
         } else {
-            System.out.println("La carpeta contiene " + images.size() + " archivos");
+            System.out.println("La carpeta contiene " + images.size() + " imagenes");
         }
         return images;
+    }
+
+    /* Solo formatos que ImageIcon puede mostrar; ignora archivos como .DS_Store */
+    static boolean isImage(Path file) {
+        String name = file.getFileName().toString().toLowerCase(Locale.ROOT);
+        for (String extension : IMAGE_EXTENSIONS) {
+            if (name.endsWith(extension)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /* Resuelve la carpeta externa, o la carpeta incluida en el classpath (en disco o dentro del jar) */
